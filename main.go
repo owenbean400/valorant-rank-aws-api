@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"valorant-rank-api/domain/environment"
 	"valorant-rank-api/domain/version"
@@ -12,8 +13,10 @@ import (
 	"github.com/aws/aws-lambda-go/lambda"
 )
 
-func handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	switch req.Path {
+func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.APIGatewayV2HTTPResponse, error) {
+	log.Printf("req.Path: %s", req.RawPath)
+	log.Printf("req.StageVariables: %+v", req.StageVariables)
+	switch req.RawPath {
 	case "/history":
 		rank_data, err := service.GetValorantRankHistory(environment.GetPlayerPuuidEnv())
 
@@ -43,16 +46,16 @@ func main() {
 	lambda.Start(handler)
 }
 
-func jsonResponse(status int, body interface{}) (events.APIGatewayProxyResponse, error) {
+func jsonResponse(status int, body interface{}) (events.APIGatewayV2HTTPResponse, error) {
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
-		return events.APIGatewayProxyResponse{
+		return events.APIGatewayV2HTTPResponse{
 			StatusCode: http.StatusInternalServerError,
 			Body:       `{"error":"internal error"}`,
 		}, nil
 	}
 
-	return events.APIGatewayProxyResponse{
+	return events.APIGatewayV2HTTPResponse{
 		StatusCode: status,
 		Headers:    map[string]string{"Content-Type": "application/json"},
 		Body:       string(jsonBody),
