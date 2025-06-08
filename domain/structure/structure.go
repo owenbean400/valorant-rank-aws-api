@@ -60,6 +60,7 @@ type MrrStat struct {
 	MatchId          string    `json:"match_id"`
 	MmmrChange       int       `json:"mmr_change_to_last_game"`
 	Date             string    `json:"date"`
+	DateRaw          int       `json:"date_raw"`
 }
 
 type RankImage struct {

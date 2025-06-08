@@ -2,16 +2,14 @@ package valorantdao
 
 import (
 	"context"
-	"errors"
-	"log"
+	"fmt"
+	"strconv"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 
 	"valorant-rank-api/domain/environment"
 	"valorant-rank-api/domain/structure"
@@ -24,6 +22,7 @@ func WriteRankValorantMatch(valorant_data structure.RankStatGameSave) error {
 		PUUID:          valorant_data.PUUID,
 		MatchId:        valorant_data.MatchId,
 		MmrChange:      valorant_data.MmrChange,
+		DateStr:        valorant_data.DateStr,
 		Map:            valorant_data.Map,
 		Character:      valorant_data.Character,
 		RoundsWon:      valorant_data.RoundsWon,
@@ -45,6 +44,7 @@ func WriteRankValorantMatch(valorant_data structure.RankStatGameSave) error {
 		PUUID:          valorant_data.PUUID,
 		MatchId:        valorant_data.MatchId,
 		MmrChange:      valorant_data.MmrChange,
+		DateStr:        valorant_data.DateStr,
 		Map:            valorant_data.Map,
 		Character:      valorant_data.Character,
 		RoundsWon:      valorant_data.RoundsWon,
@@ -63,13 +63,13 @@ func WriteRankValorantMatch(valorant_data structure.RankStatGameSave) error {
 	err := saveValorantTable(puuid_match_record)
 
 	if err != nil {
-		return errors.New("error saving Valorant Rank Match ID: " + err.Error())
+		return fmt.Errorf("error saving Valorant Rank Match ID: %w", err)
 	}
 
 	err = saveValorantTable(puuid_record)
 
 	if err != nil {
-		return errors.New("error saving Valorant Rank Player Change: " + err.Error())
+		return fmt.Errorf("error saving Valorant Rank Player Change: %w", err)
 	}
 
 	return nil
@@ -82,7 +82,7 @@ func QueryValorantMatches(puuid string) ([]structure.RankStatGameSave, error) {
 	ctx, svc, err := getDynamoDb()
 
 	if err != nil {
-		return valorant_matches, errors.New("error setting up Dynamo DB: " + err.Error())
+		return valorant_matches, fmt.Errorf("error setting up Dynamo DB: %w", err)
 	}
 
 	tableName := environment.GetTableName()
@@ -94,24 +94,14 @@ func QueryValorantMatches(puuid string) ([]structure.RankStatGameSave, error) {
 			":puuid_match": &types.AttributeValueMemberS{Value: puuid},
 		},
 		ScanIndexForward: aws.Bool(false),
-		Limit:            aws.Int32(10),
+		Limit:            aws.Int32(3),
 	}
 
-	queryPaginator := dynamodb.NewQueryPaginator(svc, &input)
+	res, err := svc.Query(ctx, &input)
 
-	for queryPaginator.HasMorePages() {
-		response, err := queryPaginator.NextPage(ctx)
-		if err != nil {
-			break
-		} else {
-			var valorant_matches_dynamodb_page []structure.ValorantRankDynamoDbRecord
-			err = attributevalue.UnmarshalListOfMaps(response.Items, &valorant_matches_dynamodb_page)
-			if err != nil {
-				break
-			} else {
-				valorant_matches_dynamodb = append(valorant_matches_dynamodb, valorant_matches_dynamodb_page...)
-			}
-		}
+	err = attributevalue.UnmarshalListOfMaps(res.Items, &valorant_matches_dynamodb)
+	if err != nil {
+		return nil, fmt.Errorf("unmarshal failed: %w", err)
 	}
 
 	for _, element := range valorant_matches_dynamodb {
@@ -144,17 +134,18 @@ func QueryValorantMatches(puuid string) ([]structure.RankStatGameSave, error) {
 	return valorant_matches, nil
 }
 
-func MatchAlreadyExist(puuid string, match_id string) (bool, error) {
+func DoesMatchExist(puuid string, match_id string, rawDateInt int) (bool, error) {
 	ctx, svc, err := getDynamoDb()
 
 	if err != nil {
-		return false, errors.New("error with setup DynamoDB: " + err.Error())
+		return false, fmt.Errorf("error setting up DynamoDB: %w", err)
 	}
 
 	tableName := environment.GetTableName()
 
 	key := map[string]types.AttributeValue{
-		"puuid_match": &types.AttributeValueMemberS{Value: getPrimaryKey(puuid, &match_id)},
+		"puuid_match":  &types.AttributeValueMemberS{Value: getPrimaryKey(puuid, &match_id)},
+		"raw_date_int": &types.AttributeValueMemberN{Value: strconv.Itoa(rawDateInt)},
 	}
 
 	result, err := svc.GetItem(ctx, &dynamodb.GetItemInput{
@@ -163,13 +154,13 @@ func MatchAlreadyExist(puuid string, match_id string) (bool, error) {
 	})
 
 	if err != nil {
-		log.Fatalf("failed to get item: %v", err)
+		return false, fmt.Errorf("failed to get item: %w", err)
 	}
 
 	if result.Item == nil {
-		return true, nil
-	} else {
 		return false, nil
+	} else {
+		return true, nil
 	}
 }
 
@@ -177,14 +168,14 @@ func saveValorantTable(valorant_rank_item structure.ValorantRankDynamoDbRecord) 
 	ctx, svc, err := getDynamoDb()
 
 	if err != nil {
-		return errors.New("error setting up DynamoDB: " + err.Error())
+		return fmt.Errorf("error setting up DynamoDB: %w", err)
 	}
 
 	tableName := environment.GetTableName()
 
 	av, err := attributevalue.MarshalMap(valorant_rank_item)
 	if err != nil {
-		return errors.New("error parsing Valorant Rank data: " + err.Error())
+		return fmt.Errorf("error parsing Valorant Rank data: %w", err)
 	}
 
 	input := &dynamodb.PutItemInput{
@@ -195,38 +186,23 @@ func saveValorantTable(valorant_rank_item structure.ValorantRankDynamoDbRecord) 
 	_, err = svc.PutItem(ctx, input)
 
 	if err != nil {
-		return errors.New("error putItem in Valorant Rank DynamoDB: " + err.Error())
+		return fmt.Errorf("error putItem in Valorant Rank DynamoDB: %w", err)
 	}
 
 	return nil
 }
 
 func getDynamoDb() (context.Context, *dynamodb.Client, error) {
-	var ctx context.Context
-	var svc *dynamodb.Client
-
-	ctx = context.Background()
+	ctx := context.Background()
 
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		return ctx, svc, errors.New("unable to load SDK config" + err.Error())
+		return ctx, nil, fmt.Errorf("unable to load SDK config: %w", err)
 	}
 
-	roleArn := environment.GetRoleArn()
-	sessionName := environment.GetSessionName()
+	db := dynamodb.NewFromConfig(cfg)
 
-	stsClient := sts.NewFromConfig(cfg)
-
-	creds := stscreds.NewAssumeRoleProvider(stsClient, roleArn, func(o *stscreds.AssumeRoleOptions) {
-		o.RoleSessionName = sessionName
-	})
-
-	roleCfg := cfg.Copy()
-	roleCfg.Credentials = aws.NewCredentialsCache(creds)
-
-	svc = dynamodb.NewFromConfig(roleCfg)
-
-	return ctx, svc, nil
+	return ctx, db, nil
 }
 
 func getPrimaryKey(puuid string, match_id *string) string {
