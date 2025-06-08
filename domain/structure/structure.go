@@ -90,7 +90,7 @@ type PlayerMetaStatSave struct {
 	HeadShots      int `json:"headshots"`
 	LegShots       int `json:"legshots"`
 	DamageMade     int `json:"damage_made"`
-	DamageRecieved int `json:"damagae_received"`
+	DamageRecieved int `json:"damage_received"`
 }
 
 type ValorantRankDynamoDbRecord struct {
