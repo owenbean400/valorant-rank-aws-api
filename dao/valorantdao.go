@@ -1,4 +1,4 @@
-package valorantdao
+package dao
 
 import (
 	"context"
@@ -79,7 +79,7 @@ func QueryValorantMatches(puuid string) ([]structure.RankStatGameSave, error) {
 	var valorant_matches_dynamodb []structure.ValorantRankDynamoDbRecord
 	var valorant_matches []structure.RankStatGameSave
 
-	ctx, svc, err := getDynamoDb()
+	ctx, svc, err := GetDynamoDb()
 
 	if err != nil {
 		return valorant_matches, fmt.Errorf("error setting up Dynamo DB: %w", err)
@@ -165,7 +165,7 @@ func DoesMatchExist(puuid string, match_id string, rawDateInt int) (bool, error)
 }
 
 func saveValorantTable(valorant_rank_item structure.ValorantRankDynamoDbRecord) error {
-	ctx, svc, err := getDynamoDb()
+	ctx, svc, err := GetDynamoDb()
 
 	if err != nil {
 		return fmt.Errorf("error setting up DynamoDB: %w", err)
