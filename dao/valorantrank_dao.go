@@ -1,12 +1,10 @@
 package dao
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
@@ -85,7 +83,7 @@ func QueryValorantMatches(puuid string) ([]structure.RankStatGameSave, error) {
 		return valorant_matches, fmt.Errorf("error setting up Dynamo DB: %w", err)
 	}
 
-	tableName := environment.GetTableName()
+	tableName := environment.GetRankTableName()
 
 	input := dynamodb.QueryInput{
 		TableName:              aws.String(tableName),
@@ -135,13 +133,13 @@ func QueryValorantMatches(puuid string) ([]structure.RankStatGameSave, error) {
 }
 
 func DoesMatchExist(puuid string, match_id string, rawDateInt int) (bool, error) {
-	ctx, svc, err := getDynamoDb()
+	ctx, svc, err := GetDynamoDb()
 
 	if err != nil {
 		return false, fmt.Errorf("error setting up DynamoDB: %w", err)
 	}
 
-	tableName := environment.GetTableName()
+	tableName := environment.GetRankTableName()
 
 	key := map[string]types.AttributeValue{
 		"puuid_match":  &types.AttributeValueMemberS{Value: getPrimaryKey(puuid, &match_id)},
@@ -171,7 +169,7 @@ func saveValorantTable(valorant_rank_item structure.ValorantRankDynamoDbRecord) 
 		return fmt.Errorf("error setting up DynamoDB: %w", err)
 	}
 
-	tableName := environment.GetTableName()
+	tableName := environment.GetRankTableName()
 
 	av, err := attributevalue.MarshalMap(valorant_rank_item)
 	if err != nil {
@@ -190,19 +188,6 @@ func saveValorantTable(valorant_rank_item structure.ValorantRankDynamoDbRecord) 
 	}
 
 	return nil
-}
-
-func getDynamoDb() (context.Context, *dynamodb.Client, error) {
-	ctx := context.Background()
-
-	cfg, err := config.LoadDefaultConfig(ctx)
-	if err != nil {
-		return ctx, nil, fmt.Errorf("unable to load SDK config: %w", err)
-	}
-
-	db := dynamodb.NewFromConfig(cfg)
-
-	return ctx, db, nil
 }
 
 func getPrimaryKey(puuid string, match_id *string) string {

@@ -1,6 +1,5 @@
 package structure
 
-// Match Info
 type MatchData struct {
 	Data MatchInfo `json:"data"`
 }

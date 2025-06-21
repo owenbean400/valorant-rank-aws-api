@@ -1,21 +1,27 @@
 package structure
 
 type ValorantClipDynamoDbRecord struct {
-	ID         string `dynamodbdav:"id"`
-	BaseURL    string `dynamodbdev:"base_url"`
-	FileName   string `dynamodbdev:"file_name"`
-	Extenstion string `dynamodbdev:"extenstion"`
-	FilePath   string `dynamodbdev:"file_path"`
-	FullUrl    string `dynamodbdev:"full_url"`
+	ID         string `dynamodbav:"uuid"`
+	BaseURL    string `dynamodbav:"base_url"`
+	FileName   string `dynamodbav:"file_name"`
+	Extenstion string `dynamodbav:"extenstion"`
+	FilePath   string `dynamodbav:"file_path"`
+	FullUrl    string `dynamodbav:"full_url"`
+	MatchId    string `dynamodbav:"match_id"`
 }
 
 type ValorantClipJSON struct {
-	ID         string `json:"id"`
+	ID         string `json:"uuid"`
 	BaseURL    string `json:"base_url"`
 	FileName   string `json:"file_name"`
 	Extenstion string `json:"extenstion"`
 	FilePath   string `json:"file_path"`
 	FullUrl    string `json:"full_url"`
+	MatchId    string `json:"match_id"`
+}
+
+type ValorantClipQuery struct {
+	PageLength *int32 `json:"page_length"`
 }
 
 // id: 23b99bfc-b91e-438a-8a73-1b45bc21f96c
