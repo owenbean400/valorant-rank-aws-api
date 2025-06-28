@@ -31,7 +31,14 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 		} else {
 			switch req.RawPath {
 			case "/clips":
-				clips_data, err, status_code := service.GetValorantClips(req.Body)
+				queryParams := req.QueryStringParameters
+
+				pageNumberStr, ok := queryParams["pageLength"]
+				if !ok {
+					pageNumberStr = "10"
+				}
+
+				clips_data, err, status_code := service.GetValorantClips(pageNumberStr)
 
 				switch status_code {
 				case 200:

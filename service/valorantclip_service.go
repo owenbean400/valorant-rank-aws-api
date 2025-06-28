@@ -1,33 +1,26 @@
 package service
 
 import (
-	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"valorant-rank-api/dao"
 	"valorant-rank-api/domain/structure"
 )
 
-func GetValorantClips(body string) ([]structure.ValorantClipJSON, error, int) {
+func GetValorantClips(pageNumberStr string) ([]structure.ValorantClipJSON, error, int) {
 	var valorant_clips []structure.ValorantClipJSON
-	var query_data structure.ValorantClipQuery
-	var default_page int32 = 10
 
-	err := json.Unmarshal([]byte(body), &query_data)
-
+	pageNumber, err := strconv.ParseInt(pageNumberStr, 10, 32)
 	if err != nil {
-		return valorant_clips, fmt.Errorf("error parsing body: %w", err), 403
+		return valorant_clips, fmt.Errorf("error parsing parameter query pageLength as not an integer: %w", err), 403
 	}
 
-	if query_data.PageLength == nil || *query_data.PageLength > 10 {
-		query_data.PageLength = &default_page
+	if pageNumber > 10 || pageNumber < 1 {
+		return valorant_clips, fmt.Errorf("parameter query pageLength integer is outside range of 1-10 query page"), 403
 	}
 
-	if *query_data.PageLength > 10 || *query_data.PageLength < 1 {
-		return valorant_clips, fmt.Errorf("integer is outside range of 1-10 query page"), 403
-	}
-
-	valorant_clips, err = dao.ScanValorantClips(*query_data.PageLength)
+	valorant_clips, err = dao.ScanValorantClips(int32(pageNumber))
 
 	if err != nil {
 		return valorant_clips, fmt.Errorf("error scanning clips: %w", err), 500
