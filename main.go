@@ -38,7 +38,12 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 					pageNumberStr = "10"
 				}
 
-				clips_data, err, status_code := service.GetValorantClips(pageNumberStr)
+				last_eval_key, ok := queryParams["lastEvalKey"]
+				if !ok {
+					last_eval_key = ""
+				}
+
+				clips_data, err, status_code := service.GetValorantClips(pageNumberStr, last_eval_key)
 
 				switch status_code {
 				case 200:

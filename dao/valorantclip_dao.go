@@ -75,33 +75,57 @@ func GetValorantClip(uuid string) (structure.ValorantClipJSON, error) {
 	return valorant_clip, nil
 }
 
-func ScanValorantClips(queryAmount int32) ([]structure.ValorantClipJSON, error) {
+func ScanValorantClips(queryAmount int32, start_eval_key_uuid string) (structure.ValorantClipsTable, error) {
 	var valorant_clips_dynamodb []structure.ValorantClipDynamoDbRecord
 	var valorant_clips []structure.ValorantClipJSON
+	var valorant_table_json structure.ValorantClipsTable
 
 	ctx, svc, err := GetDynamoDb()
 
 	if err != nil {
-		return valorant_clips, fmt.Errorf("error setting up Dynamo DB: %w", err)
+		return valorant_table_json, fmt.Errorf("error setting up Dynamo DB: %w", err)
 	}
 
 	tableName := environment.GetClipTableName()
 
-	input := dynamodb.ScanInput{
-		TableName: aws.String(tableName),
-		Limit:     aws.Int32(queryAmount),
+	var input dynamodb.ScanInput
+	if start_eval_key_uuid == "" {
+		input = dynamodb.ScanInput{
+			TableName: aws.String(tableName),
+			Limit:     aws.Int32(queryAmount),
+		}
+	} else {
+		input = dynamodb.ScanInput{
+			TableName:         aws.String(tableName),
+			Limit:             aws.Int32(queryAmount),
+			ExclusiveStartKey: map[string]types.AttributeValue{"uuid": &types.AttributeValueMemberS{Value: start_eval_key_uuid}},
+		}
 	}
 
 	res, err := svc.Scan(ctx, &input)
 
 	if err != nil {
-		return valorant_clips, fmt.Errorf("error scan Dynamo DB: %w", err)
+		return valorant_table_json, fmt.Errorf("error scan Dynamo DB: %w", err)
 	}
+
+	fmt.Println(res.LastEvaluatedKey)
 
 	err = attributevalue.UnmarshalListOfMaps(res.Items, &valorant_clips_dynamodb)
 
 	if err != nil {
-		return valorant_clips, fmt.Errorf("unmarshal failed: %w", err)
+		return valorant_table_json, fmt.Errorf("unmarshal failed: %w", err)
+	}
+
+	var lase_eval_key_uuid string
+
+	if val, ok := res.LastEvaluatedKey["uuid"]; ok {
+		if s, ok := val.(*types.AttributeValueMemberS); ok {
+			lase_eval_key_uuid = s.Value
+		} else {
+			lase_eval_key_uuid = ""
+		}
+	} else {
+		lase_eval_key_uuid = ""
 	}
 
 	for _, element := range valorant_clips_dynamodb {
@@ -116,7 +140,10 @@ func ScanValorantClips(queryAmount int32) ([]structure.ValorantClipJSON, error) 
 		})
 	}
 
-	return valorant_clips, nil
+	return structure.ValorantClipsTable{
+		Clips:                valorant_clips,
+		LastEvaluatedKeyUuid: lase_eval_key_uuid,
+	}, nil
 }
 
 func saveClipTable(clip structure.ValorantClipDynamoDbRecord) error {

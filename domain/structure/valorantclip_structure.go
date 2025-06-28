@@ -20,6 +20,11 @@ type ValorantClipJSON struct {
 	MatchId    string `json:"match_id"`
 }
 
+type ValorantClipsTable struct {
+	Clips                []ValorantClipJSON `json:"clips"`
+	LastEvaluatedKeyUuid string             `json:"last_eval_key_uuid"`
+}
+
 // id: 23b99bfc-b91e-438a-8a73-1b45bc21f96c
 // base url: https://www.beanballer.com/clips
 // file name: 23b99bfc-b91e-438a-8a73-1b45bc21f96c.mp4

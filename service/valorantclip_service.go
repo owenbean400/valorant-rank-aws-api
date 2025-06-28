@@ -8,25 +8,25 @@ import (
 	"valorant-rank-api/domain/structure"
 )
 
-func GetValorantClips(pageNumberStr string) ([]structure.ValorantClipJSON, error, int) {
-	var valorant_clips []structure.ValorantClipJSON
+func GetValorantClips(pageNumberStr string, lastEvalKey string) (structure.ValorantClipsTable, error, int) {
+	var valorant_clips_table structure.ValorantClipsTable
 
 	pageNumber, err := strconv.ParseInt(pageNumberStr, 10, 32)
 	if err != nil {
-		return valorant_clips, fmt.Errorf("error parsing parameter query pageLength as not an integer: %w", err), 403
+		return valorant_clips_table, fmt.Errorf("error parsing parameter query pageLength as not an integer: %w", err), 403
 	}
 
 	if pageNumber > 10 || pageNumber < 1 {
-		return valorant_clips, fmt.Errorf("parameter query pageLength integer is outside range of 1-10 query page"), 403
+		return valorant_clips_table, fmt.Errorf("parameter query pageLength integer is outside range of 1-10 query page"), 403
 	}
 
-	valorant_clips, err = dao.ScanValorantClips(int32(pageNumber))
+	valorant_clips_table, err = dao.ScanValorantClips(int32(pageNumber), lastEvalKey)
 
 	if err != nil {
-		return valorant_clips, fmt.Errorf("error scanning clips: %w", err), 500
+		return valorant_clips_table, fmt.Errorf("error scanning clips: %w", err), 500
 	}
 
-	return valorant_clips, nil, 200
+	return valorant_clips_table, nil, 200
 }
 
 func GetValorantClip(uuid string) (structure.ValorantClipJSON, error, int) {
