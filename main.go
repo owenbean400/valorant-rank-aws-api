@@ -54,12 +54,27 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 					return jsonResponse(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 				}
 			case "/history":
-				rank_data, err := service.GetValorantRankHistory(environment.GetPlayerPuuidEnv())
+				query_params := req.QueryStringParameters
 
-				if err != nil {
-					return jsonResponse(http.StatusInternalServerError, map[string]string{"error": "internal error"})
-				} else {
-					return jsonResponse(http.StatusOK, rank_data)
+				page_number_str, ok := query_params["pageLength"]
+				if !ok {
+					page_number_str = "10"
+				}
+
+				last_eval_key, ok := query_params["lastEvalKey"]
+				if !ok {
+					last_eval_key = ""
+				}
+
+				rank_history, status_code, err := service.GetValorantRankHistory(environment.GetPlayerPuuidEnv(), page_number_str, last_eval_key)
+
+				switch status_code {
+				case 200:
+					return jsonResponse(http.StatusOK, rank_history)
+				case 403:
+					return jsonResponse(http.StatusBadRequest, map[string]string{"msg": "page_length must be an integer equal to or less than 10 and greater than 0"})
+				default:
+					return jsonResponse(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 				}
 			case "/version":
 				return jsonResponse(http.StatusOK, map[string]string{"version": version.GetVersionNumber()})

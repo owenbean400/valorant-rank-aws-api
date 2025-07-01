@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	valorantdao "valorant-rank-api/dao"
 	"valorant-rank-api/domain/environment"
 	"valorant-rank-api/domain/helper"
@@ -105,16 +106,25 @@ func UpdateDataWithAPI(puuid string) error {
 	return nil
 }
 
-func GetValorantRankHistory(puuid string) ([]structure.RankStatGameSave, error) {
-	var rank_games []structure.RankStatGameSave
+func GetValorantRankHistory(puuid string, page_number_str string, last_eval_key string) (structure.ValorantRankHistoryTable, int, error) {
+	var rank_history structure.ValorantRankHistoryTable
 
-	rank_games, err := valorantdao.QueryValorantMatches(puuid)
-
+	page_number, err := strconv.ParseInt(page_number_str, 10, 32)
 	if err != nil {
-		return rank_games, fmt.Errorf("error getting Valorant rank history: %w", err)
+		return rank_history, 403, fmt.Errorf("error parsing parameter query pageLength as not an integer: %w", err)
 	}
 
-	return rank_games, nil
+	if page_number > 10 || page_number < 1 {
+		return rank_history, 403, fmt.Errorf("parameter query pageLength integer is outside range of 1-10 query page")
+	}
+
+	rank_history, err = valorantdao.QueryValorantMatches(puuid, int32(page_number), last_eval_key)
+
+	if err != nil {
+		return rank_history, 500, fmt.Errorf("error getting Valorant rank history: %w", err)
+	}
+
+	return rank_history, 200, nil
 }
 
 func getMatchData(match_id string) (structure.MatchData, error) {

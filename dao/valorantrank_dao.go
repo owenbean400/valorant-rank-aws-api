@@ -73,33 +73,64 @@ func WriteRankValorantMatch(valorant_data structure.RankStatGameSave) error {
 	return nil
 }
 
-func QueryValorantMatches(puuid string) ([]structure.RankStatGameSave, error) {
+func QueryValorantMatches(puuid string, pageNumber int32, start_eval_key_puuid_match string) (structure.ValorantRankHistoryTable, error) {
 	var valorant_matches_dynamodb []structure.ValorantRankDynamoDbRecord
 	var valorant_matches []structure.RankStatGameSave
+	var valorant_matches_json structure.ValorantRankHistoryTable
 
 	ctx, svc, err := GetDynamoDb()
 
 	if err != nil {
-		return valorant_matches, fmt.Errorf("error setting up Dynamo DB: %w", err)
+		return valorant_matches_json, fmt.Errorf("error setting up Dynamo DB: %w", err)
 	}
 
 	tableName := environment.GetRankTableName()
 
-	input := dynamodb.QueryInput{
-		TableName:              aws.String(tableName),
-		KeyConditionExpression: aws.String("puuid_match = :puuid_match"),
-		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":puuid_match": &types.AttributeValueMemberS{Value: puuid},
-		},
-		ScanIndexForward: aws.Bool(false),
-		Limit:            aws.Int32(3),
+	var input dynamodb.QueryInput
+	if start_eval_key_puuid_match == "" {
+		input = dynamodb.QueryInput{
+			TableName:              aws.String(tableName),
+			KeyConditionExpression: aws.String("puuid_match = :puuid_match"),
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":puuid_match": &types.AttributeValueMemberS{Value: puuid},
+			},
+			ScanIndexForward: aws.Bool(false),
+			Limit:            aws.Int32(pageNumber),
+		}
+	} else {
+		input = dynamodb.QueryInput{
+			TableName:              aws.String(tableName),
+			KeyConditionExpression: aws.String("puuid_match = :puuid_match"),
+			ExpressionAttributeValues: map[string]types.AttributeValue{
+				":puuid_match": &types.AttributeValueMemberS{Value: puuid},
+			},
+			ScanIndexForward:  aws.Bool(false),
+			Limit:             aws.Int32(pageNumber),
+			ExclusiveStartKey: map[string]types.AttributeValue{"puuid_match": &types.AttributeValueMemberS{Value: start_eval_key_puuid_match}},
+		}
 	}
 
 	res, err := svc.Query(ctx, &input)
 
+	if err != nil {
+		return valorant_matches_json, fmt.Errorf("error query up Dynamo DB: %w", err)
+	}
+
+	var last_eval_key_puuid_match string
+
+	if val, ok := res.LastEvaluatedKey["puuid_match"]; ok {
+		if s, ok := val.(*types.AttributeValueMemberS); ok {
+			last_eval_key_puuid_match = s.Value
+		} else {
+			last_eval_key_puuid_match = ""
+		}
+	} else {
+		last_eval_key_puuid_match = ""
+	}
+
 	err = attributevalue.UnmarshalListOfMaps(res.Items, &valorant_matches_dynamodb)
 	if err != nil {
-		return nil, fmt.Errorf("unmarshal failed: %w", err)
+		return valorant_matches_json, fmt.Errorf("unmarshal failed: %w", err)
 	}
 
 	for _, element := range valorant_matches_dynamodb {
@@ -129,7 +160,10 @@ func QueryValorantMatches(puuid string) ([]structure.RankStatGameSave, error) {
 		})
 	}
 
-	return valorant_matches, nil
+	return structure.ValorantRankHistoryTable{
+		History:                    valorant_matches,
+		LastEvaluatedKeyPuuidMatch: last_eval_key_puuid_match,
+	}, nil
 }
 
 func DoesMatchExist(puuid string, match_id string, rawDateInt int) (bool, error) {

@@ -114,3 +114,8 @@ type ValorantRankDynamoDbRecord struct {
 	DamageMade     int    `dynamodbav:"damage_made"`
 	DamageRecieved int    `dynamodbav:"damagae_received"`
 }
+
+type ValorantRankHistoryTable struct {
+	History                    []RankStatGameSave `json:"rank_history"`
+	LastEvaluatedKeyPuuidMatch string             `json:"last_eval_key_puuid_match"`
+}
