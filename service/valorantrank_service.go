@@ -106,7 +106,7 @@ func UpdateDataWithAPI(puuid string) error {
 	return nil
 }
 
-func GetValorantRankHistory(puuid string, page_number_str string, last_eval_key string) (structure.ValorantRankHistoryTable, int, error) {
+func GetValorantRankHistory(puuid string, page_number_str string, last_eval_key_puuid_match string, last_eval_key_raw_date_int_str string) (structure.ValorantRankHistoryTable, int, error) {
 	var rank_history structure.ValorantRankHistoryTable
 
 	page_number, err := strconv.ParseInt(page_number_str, 10, 32)
@@ -118,7 +118,12 @@ func GetValorantRankHistory(puuid string, page_number_str string, last_eval_key 
 		return rank_history, 403, fmt.Errorf("parameter query pageLength integer is outside range of 1-10 query page")
 	}
 
-	rank_history, err = valorantdao.QueryValorantMatches(puuid, int32(page_number), last_eval_key)
+	last_eval_key_raw_date_int, err := strconv.ParseInt(last_eval_key_raw_date_int_str, 10, 32)
+	if err != nil {
+		return rank_history, 403, fmt.Errorf("parameter query lastEvalKeyRawDateInt is not an integer: %w", err)
+	}
+
+	rank_history, err = valorantdao.QueryValorantMatches(puuid, int32(page_number), last_eval_key_puuid_match, int(last_eval_key_raw_date_int))
 
 	if err != nil {
 		return rank_history, 500, fmt.Errorf("error getting Valorant rank history: %w", err)

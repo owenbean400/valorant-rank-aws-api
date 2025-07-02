@@ -108,8 +108,6 @@ func ScanValorantClips(page_limit int32, start_eval_key_uuid string) (structure.
 		return valorant_table_json, fmt.Errorf("error scan Dynamo DB: %w", err)
 	}
 
-	fmt.Println(res.LastEvaluatedKey)
-
 	err = attributevalue.UnmarshalListOfMaps(res.Items, &valorant_clips_dynamodb)
 
 	if err != nil {

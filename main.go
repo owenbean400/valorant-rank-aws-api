@@ -61,12 +61,17 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 					page_number_str = "10"
 				}
 
-				last_eval_key, ok := query_params["lastEvalKey"]
+				last_eval_key_puuid_match, ok := query_params["lastEvalKeyPuuidMatch"]
 				if !ok {
-					last_eval_key = ""
+					last_eval_key_puuid_match = ""
 				}
 
-				rank_history, status_code, err := service.GetValorantRankHistory(environment.GetPlayerPuuidEnv(), page_number_str, last_eval_key)
+				last_eval_key_raw_date_int_str, ok := query_params["lastEvalKeyRawDateInt"]
+				if !ok || last_eval_key_raw_date_int_str == "" {
+					last_eval_key_raw_date_int_str = "-1"
+				}
+
+				rank_history, status_code, err := service.GetValorantRankHistory(environment.GetPlayerPuuidEnv(), page_number_str, last_eval_key_puuid_match, last_eval_key_raw_date_int_str)
 
 				switch status_code {
 				case 200:
