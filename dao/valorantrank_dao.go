@@ -84,12 +84,12 @@ func QueryValorantMatches(puuid string, pageNumber int32, start_eval_key_puuid_m
 		return valorant_matches_json, fmt.Errorf("error setting up Dynamo DB: %w", err)
 	}
 
-	tableName := environment.GetRankTableName()
+	table_name := environment.GetRankTableName()
 
 	var input dynamodb.QueryInput
 	if start_eval_key_puuid_match == "" {
 		input = dynamodb.QueryInput{
-			TableName:              aws.String(tableName),
+			TableName:              aws.String(table_name),
 			KeyConditionExpression: aws.String("puuid_match = :puuid_match"),
 			ExpressionAttributeValues: map[string]types.AttributeValue{
 				":puuid_match": &types.AttributeValueMemberS{Value: puuid},
@@ -99,7 +99,7 @@ func QueryValorantMatches(puuid string, pageNumber int32, start_eval_key_puuid_m
 		}
 	} else {
 		input = dynamodb.QueryInput{
-			TableName:              aws.String(tableName),
+			TableName:              aws.String(table_name),
 			KeyConditionExpression: aws.String("puuid_match = :puuid_match"),
 			ExpressionAttributeValues: map[string]types.AttributeValue{
 				":puuid_match": &types.AttributeValueMemberS{Value: puuid},
@@ -166,22 +166,22 @@ func QueryValorantMatches(puuid string, pageNumber int32, start_eval_key_puuid_m
 	}, nil
 }
 
-func DoesMatchExist(puuid string, match_id string, rawDateInt int) (bool, error) {
+func DoesMatchExist(puuid string, match_id string, raw_date_int int) (bool, error) {
 	ctx, svc, err := GetDynamoDb()
 
 	if err != nil {
 		return false, fmt.Errorf("error setting up DynamoDB: %w", err)
 	}
 
-	tableName := environment.GetRankTableName()
+	table_name := environment.GetRankTableName()
 
 	key := map[string]types.AttributeValue{
 		"puuid_match":  &types.AttributeValueMemberS{Value: getPrimaryKey(puuid, &match_id)},
-		"raw_date_int": &types.AttributeValueMemberN{Value: strconv.Itoa(rawDateInt)},
+		"raw_date_int": &types.AttributeValueMemberN{Value: strconv.Itoa(raw_date_int)},
 	}
 
 	result, err := svc.GetItem(ctx, &dynamodb.GetItemInput{
-		TableName: aws.String(tableName),
+		TableName: aws.String(table_name),
 		Key:       key,
 	})
 
@@ -203,7 +203,7 @@ func saveValorantTable(valorant_rank_item structure.ValorantRankDynamoDbRecord) 
 		return fmt.Errorf("error setting up DynamoDB: %w", err)
 	}
 
-	tableName := environment.GetRankTableName()
+	table_name := environment.GetRankTableName()
 
 	av, err := attributevalue.MarshalMap(valorant_rank_item)
 	if err != nil {
@@ -212,7 +212,7 @@ func saveValorantTable(valorant_rank_item structure.ValorantRankDynamoDbRecord) 
 
 	input := &dynamodb.PutItemInput{
 		Item:      av,
-		TableName: aws.String(tableName),
+		TableName: aws.String(table_name),
 	}
 
 	_, err = svc.PutItem(ctx, input)

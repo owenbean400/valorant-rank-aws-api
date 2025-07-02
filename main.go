@@ -19,7 +19,7 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 		if strings.HasPrefix(req.RawPath, "/clip/") {
 			uuid := req.RawPath[6:]
 
-			clip, err, status_code := service.GetValorantClip(uuid)
+			clip, status_code, err := service.GetValorantClip(uuid)
 			switch status_code {
 			case 302:
 				return redirectReponse(http.StatusFound, clip.FullUrl)
@@ -43,7 +43,7 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 					last_eval_key = ""
 				}
 
-				clips_data, err, status_code := service.GetValorantClips(pageNumberStr, last_eval_key)
+				clips_data, status_code, err := service.GetValorantClips(pageNumberStr, last_eval_key)
 
 				switch status_code {
 				case 200:

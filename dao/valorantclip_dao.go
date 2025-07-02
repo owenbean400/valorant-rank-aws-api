@@ -75,7 +75,7 @@ func GetValorantClip(uuid string) (structure.ValorantClipJSON, error) {
 	return valorant_clip, nil
 }
 
-func ScanValorantClips(queryAmount int32, start_eval_key_uuid string) (structure.ValorantClipsTable, error) {
+func ScanValorantClips(page_limit int32, start_eval_key_uuid string) (structure.ValorantClipsTable, error) {
 	var valorant_clips_dynamodb []structure.ValorantClipDynamoDbRecord
 	var valorant_clips []structure.ValorantClipJSON
 	var valorant_table_json structure.ValorantClipsTable
@@ -86,18 +86,18 @@ func ScanValorantClips(queryAmount int32, start_eval_key_uuid string) (structure
 		return valorant_table_json, fmt.Errorf("error setting up Dynamo DB: %w", err)
 	}
 
-	tableName := environment.GetClipTableName()
+	table_name := environment.GetClipTableName()
 
 	var input dynamodb.ScanInput
 	if start_eval_key_uuid == "" {
 		input = dynamodb.ScanInput{
-			TableName: aws.String(tableName),
-			Limit:     aws.Int32(queryAmount),
+			TableName: aws.String(table_name),
+			Limit:     aws.Int32(page_limit),
 		}
 	} else {
 		input = dynamodb.ScanInput{
-			TableName:         aws.String(tableName),
-			Limit:             aws.Int32(queryAmount),
+			TableName:         aws.String(table_name),
+			Limit:             aws.Int32(page_limit),
 			ExclusiveStartKey: map[string]types.AttributeValue{"uuid": &types.AttributeValueMemberS{Value: start_eval_key_uuid}},
 		}
 	}
@@ -153,7 +153,7 @@ func saveClipTable(clip structure.ValorantClipDynamoDbRecord) error {
 		return errors.New("error setting up DynamoDB: " + err.Error())
 	}
 
-	tableName := environment.GetClipTableName()
+	table_name := environment.GetClipTableName()
 
 	av, err := attributevalue.MarshalMap(clip)
 
@@ -163,7 +163,7 @@ func saveClipTable(clip structure.ValorantClipDynamoDbRecord) error {
 
 	input := &dynamodb.PutItemInput{
 		Item:      av,
-		TableName: aws.String(tableName),
+		TableName: aws.String(table_name),
 	}
 
 	_, err = svc.PutItem(ctx, input)
