@@ -91,6 +91,12 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 	case http.MethodPost:
 		switch req.RawPath {
 		case "/update":
+			api_key := req.Headers["authorization"]
+
+			if api_key != environment.SecretPostPassKey() {
+				return jsonResponse(http.StatusUnauthorized, map[string]string{"msg": "API Key not authorized"})
+			}
+
 			err := service.UpdateDataWithAPI(environment.GetPlayerPuuidEnv())
 
 			if err != nil {
@@ -98,7 +104,23 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 			} else {
 				return jsonResponse(http.StatusOK, map[string]string{"msg": "data updated"})
 			}
+		case "/clips":
+			api_key := req.Headers["authorization"]
 
+			if api_key != environment.SecretPostPassKey() {
+				return jsonResponse(http.StatusUnauthorized, map[string]string{"msg": "API Key not authorized"})
+			}
+
+			clips_data, status_code, err := service.WriteValorantClip(req.Body)
+
+			switch status_code {
+			case 200:
+				return jsonResponse(http.StatusOK, clips_data)
+			case 403:
+				return jsonResponse(http.StatusBadRequest, map[string]string{"msg": "Issue with parsing clips data"})
+			default:
+				return jsonResponse(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			}
 		default:
 			return jsonResponse(http.StatusNotFound, map[string]string{"error": "not found"})
 		}

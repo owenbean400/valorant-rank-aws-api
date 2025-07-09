@@ -18,6 +18,10 @@ func GetClipTableName() string {
 	return os.Getenv("AWS_DYNAMODB_CLIP_TABLE_ARN")
 }
 
+func SecretPostPassKey() string {
+	return os.Getenv("API_POST_PASSWORD")
+}
+
 func GetSessionName() string {
 	sessionNameOs := os.Getenv("AWS_DYNAMODB_SESSION_NAME")
 	if sessionNameOs == "" {

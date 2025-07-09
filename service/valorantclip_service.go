@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -47,4 +48,21 @@ func GetValorantClip(uuid string) (structure.ValorantClipJSON, int, error) {
 	}
 
 	return valorant_clip, 302, nil
+}
+
+func WriteValorantClip(body string) (structure.ValorantClipJSON, int, error) {
+	var valorant_clip structure.ValorantClipJSON
+
+	err := json.Unmarshal([]byte(body), &valorant_clip)
+	if err != nil {
+		return valorant_clip, 403, fmt.Errorf("error parsing body of valorant clip data: %w", err)
+	}
+
+	err = dao.WriteClip(valorant_clip)
+
+	if err != nil {
+		return valorant_clip, 500, fmt.Errorf("error saving valorant clip data: %w", err)
+	}
+
+	return valorant_clip, 200, nil
 }
