@@ -13,15 +13,7 @@ import (
 )
 
 func WriteClip(clip_data structure.ValorantClipJSON) error {
-	clip_record := structure.ValorantClipDynamoDbRecord{
-		ID:         clip_data.ID,
-		BaseURL:    clip_data.BaseURL,
-		FileName:   clip_data.FileName,
-		Extenstion: clip_data.Extenstion,
-		FilePath:   clip_data.FilePath,
-		FullUrl:    clip_data.FullUrl,
-		MatchId:    clip_data.MatchId,
-	}
+	clip_record := structure.ValorantClipDynamoDbRecord(clip_data)
 
 	err := saveClipTable(clip_record)
 
@@ -63,15 +55,7 @@ func GetValorantClip(uuid string) (structure.ValorantClipJSON, error) {
 		return valorant_clip, fmt.Errorf("error parsing dynamoDB data of clips: %w", err)
 	}
 
-	valorant_clip = structure.ValorantClipJSON{
-		ID:         valorant_clip_dynamodb.ID,
-		BaseURL:    valorant_clip_dynamodb.BaseURL,
-		FileName:   valorant_clip_dynamodb.FileName,
-		Extenstion: valorant_clip_dynamodb.Extenstion,
-		FilePath:   valorant_clip_dynamodb.FilePath,
-		FullUrl:    valorant_clip_dynamodb.FullUrl,
-		MatchId:    valorant_clip_dynamodb.MatchId,
-	}
+	valorant_clip = structure.ValorantClipJSON(valorant_clip_dynamodb)
 
 	return valorant_clip, nil
 }
@@ -128,15 +112,7 @@ func ScanValorantClips(page_limit int32, start_eval_key_uuid string) (structure.
 	}
 
 	for _, element := range valorant_clips_dynamodb {
-		valorant_clips = append(valorant_clips, structure.ValorantClipJSON{
-			ID:         element.ID,
-			BaseURL:    element.BaseURL,
-			FileName:   element.FileName,
-			Extenstion: element.Extenstion,
-			FilePath:   element.FilePath,
-			FullUrl:    element.FullUrl,
-			MatchId:    element.MatchId,
-		})
+		valorant_clips = append(valorant_clips, structure.ValorantClipJSON(element))
 	}
 
 	return structure.ValorantClipsTable{
