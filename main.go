@@ -104,7 +104,7 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 			} else {
 				return jsonResponse(http.StatusOK, map[string]string{"msg": "data updated"})
 			}
-		case "/clips":
+		case "/clip":
 			api_key := req.Headers["authorization"]
 
 			if api_key != environment.SecretPostPassKey() {
@@ -117,7 +117,7 @@ func handler(ctx context.Context, req events.APIGatewayV2HTTPRequest) (events.AP
 			case 200:
 				return jsonResponse(http.StatusOK, clips_data)
 			case 403:
-				return jsonResponse(http.StatusBadRequest, map[string]string{"msg": "Issue with parsing clips data"})
+				return jsonResponse(http.StatusBadRequest, map[string]string{"msg": "Issue with parsing clip data"})
 			default:
 				return jsonResponse(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 			}
