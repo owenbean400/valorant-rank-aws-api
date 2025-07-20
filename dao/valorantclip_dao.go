@@ -20,6 +20,7 @@ func WriteClip(clip_data structure.ValorantClipJSON) error {
 		Extenstion: clip_data.Extenstion,
 		FilePath:   clip_data.FilePath,
 		FullUrl:    clip_data.FullUrl,
+		MatchId:    clip_data.MatchId,
 	}
 
 	err := saveClipTable(clip_record)
