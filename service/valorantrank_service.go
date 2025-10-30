@@ -3,7 +3,9 @@ package service
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+	"strconv"
 	valorantdao "valorant-rank-api/dao"
 	"valorant-rank-api/domain/environment"
 	"valorant-rank-api/domain/helper"
@@ -11,11 +13,13 @@ import (
 )
 
 func UpdateDataWithAPI(puuid string) error {
-	url := "https://api.henrikdev.xyz/valorant/v1/mmr-history/na" + puuid
+	errorsStr := ""
+
+	url := "https://api.henrikdev.xyz/valorant/v1/by-puuid/mmr-history/na/" + puuid
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return errors.New("error creating request: " + err.Error())
+		return fmt.Errorf("error creating request: %w", err)
 	}
 
 	req.Header.Add("Authorization", environment.GetValorantAPIKeyEnv())
@@ -24,7 +28,7 @@ func UpdateDataWithAPI(puuid string) error {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return errors.New("error making request: " + err.Error())
+		return fmt.Errorf("error creating request: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -34,11 +38,11 @@ func UpdateDataWithAPI(puuid string) error {
 	err = decoder.Decode(&result)
 
 	if err != nil {
-		return errors.New("error parsing JSON: " + err.Error())
+		return fmt.Errorf("error creating request: %w", err)
 	}
 
 	for _, mrr_stats := range result.MrrStats {
-		isMatchExist, err := valorantdao.MatchAlreadyExist(puuid, mrr_stats.MatchId)
+		isMatchExist, err := valorantdao.DoesMatchExist(puuid, mrr_stats.MatchId, mrr_stats.DateRaw)
 
 		if err == nil && !isMatchExist {
 			matchData, err := getMatchData(mrr_stats.MatchId)
@@ -69,6 +73,8 @@ func UpdateDataWithAPI(puuid string) error {
 					rankSaveGame := structure.RankStatGameSave{PUUID: puuid,
 						MatchId:        mrr_stats.MatchId,
 						MmrChange:      mrr_stats.MmmrChange,
+						RawDateInt:     mrr_stats.DateRaw,
+						DateStr:        mrr_stats.Date,
 						Map:            matchData.Data.MetaData.Map,
 						Character:      player.Character,
 						RoundsWon:      teamStat.RoundsWon,
@@ -76,26 +82,54 @@ func UpdateDataWithAPI(puuid string) error {
 						PlayerMetaStat: playMetaStatSave,
 					}
 
-					valorantdao.WriteRankValorantMatch(rankSaveGame)
+					err = valorantdao.WriteRankValorantMatch(rankSaveGame)
 
+					if err != nil {
+						errorsStr += err.Error() + "::"
+					}
+
+				} else {
+					errorsStr += "error with finding player ID ::"
 				}
+			} else {
+				errorsStr += err.Error() + "::"
 			}
+		} else if err != nil {
+			errorsStr += err.Error() + "::"
 		}
+	}
+
+	if errorsStr != "" {
+		return errors.New(errorsStr)
 	}
 
 	return nil
 }
 
-func GetValorantRankHistory(puuid string) ([]structure.RankStatGameSave, error) {
-	var rank_games []structure.RankStatGameSave
+func GetValorantRankHistory(puuid string, page_number_str string, last_eval_key_puuid_match string, last_eval_key_raw_date_int_str string) (structure.ValorantRankHistoryTable, int, error) {
+	var rank_history structure.ValorantRankHistoryTable
 
-	rank_games, err := valorantdao.QueryValorantMatches(puuid)
-
+	page_number, err := strconv.ParseInt(page_number_str, 10, 32)
 	if err != nil {
-		return rank_games, errors.New("error getting Valorant rank history: " + err.Error())
+		return rank_history, 403, fmt.Errorf("error parsing parameter query pageLength as not an integer: %w", err)
 	}
 
-	return rank_games, nil
+	if page_number > 10 || page_number < 1 {
+		return rank_history, 403, fmt.Errorf("parameter query pageLength integer is outside range of 1-10 query page")
+	}
+
+	last_eval_key_raw_date_int, err := strconv.ParseInt(last_eval_key_raw_date_int_str, 10, 32)
+	if err != nil {
+		return rank_history, 403, fmt.Errorf("parameter query lastEvalKeyRawDateInt is not an integer: %w", err)
+	}
+
+	rank_history, err = valorantdao.QueryValorantMatches(puuid, int32(page_number), last_eval_key_puuid_match, int(last_eval_key_raw_date_int))
+
+	if err != nil {
+		return rank_history, 500, fmt.Errorf("error getting Valorant rank history: %w", err)
+	}
+
+	return rank_history, 200, nil
 }
 
 func getMatchData(match_id string) (structure.MatchData, error) {
@@ -105,7 +139,7 @@ func getMatchData(match_id string) (structure.MatchData, error) {
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return result, errors.New("could not start new request: " + err.Error())
+		return result, fmt.Errorf("could not start new request: %w", err)
 	}
 
 	req.Header.Add("Authorization", environment.GetValorantAPIKeyEnv())
@@ -114,7 +148,7 @@ func getMatchData(match_id string) (structure.MatchData, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return result, errors.New("error making request: " + err.Error())
+		return result, fmt.Errorf("error making request: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -123,7 +157,7 @@ func getMatchData(match_id string) (structure.MatchData, error) {
 	err = decoder.Decode(&result)
 
 	if err != nil {
-		return result, errors.New("error parsing json: " + err.Error())
+		return result, fmt.Errorf("error parsing json: %w", err)
 	}
 
 	return result, nil

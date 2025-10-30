@@ -1,6 +1,5 @@
 package structure
 
-// Match Info
 type MatchData struct {
 	Data MatchInfo `json:"data"`
 }
@@ -60,6 +59,7 @@ type MrrStat struct {
 	MatchId          string    `json:"match_id"`
 	MmmrChange       int       `json:"mmr_change_to_last_game"`
 	Date             string    `json:"date"`
+	DateRaw          int       `json:"date_raw"`
 }
 
 type RankImage struct {
@@ -113,4 +113,14 @@ type ValorantRankDynamoDbRecord struct {
 	LegShots       int    `dynamodbav:"legshots"`
 	DamageMade     int    `dynamodbav:"damage_made"`
 	DamageRecieved int    `dynamodbav:"damagae_received"`
+}
+
+type ValorantHistoryLastEvaluatedKey struct {
+	LastEvaluatedKeyPuuidMatch string `json:"last_eval_key_puuid_match"`
+	LastEvaluatedKeyRawDate    int    `json:"last_eval_key_raw_date_int"`
+}
+
+type ValorantRankHistoryTable struct {
+	History          []RankStatGameSave               `json:"rank_history"`
+	LastEvaluatedKey *ValorantHistoryLastEvaluatedKey `json:"last_eval_keys"`
 }

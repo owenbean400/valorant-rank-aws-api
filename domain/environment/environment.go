@@ -10,12 +10,16 @@ func GetValorantAPIKeyEnv() string {
 	return os.Getenv("VALORANT_API_KEY")
 }
 
-func GetRoleArn() string {
-	return os.Getenv("AWS_DYNAMODB_ROLE_ARN")
+func GetRankTableName() string {
+	return os.Getenv("AWS_DYNAMODB_RANK_TABLE_ARN")
 }
 
-func GetTableName() string {
-	return os.Getenv("AWS_DYNAMODB_TABLE_ARN")
+func GetClipTableName() string {
+	return os.Getenv("AWS_DYNAMODB_CLIP_TABLE_ARN")
+}
+
+func SecretPostPassKey() string {
+	return os.Getenv("API_POST_PASSWORD")
 }
 
 func GetSessionName() string {
