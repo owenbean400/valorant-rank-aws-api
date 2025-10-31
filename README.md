@@ -1,43 +1,121 @@
 # Valorant Rank Data
 
-This is for those who want to own their Valorant rank data summary information in AWS DynamoDB and have an API endpoint for fetching history.
+This project provides a way to **store and manage Valorant rank data** using **AWS DynamoDB**, with an **API endpoint** for accessing rank history and clip data.
 
-## Requirements
+---
 
-Below are requirements cloud infrastructure to setup this project for personal use.
+## 🚀 Overview
 
-- AWS
-  - DynamoDB
-  - Lambda Function
+The project runs on **AWS** using a **Golang monolithic server architecture** deployed via **AWS Lambda**.
+It stores and retrieves Valorant player rank history and gameplay clips within DynamoDB.
 
-## Setup
+---
 
-This project was built for users to setup their own application on AWS.
+## 🧰 Requirements
 
-### API
+### Cloud Infrastructure
 
-[Valorant API Doc Authentication](https://docs.henrikdev.xyz/authentication-and-authorization)
+* **AWS Services**
 
-### AWS
+  * DynamoDB
+  * Lambda
 
-This project was implemented to run on AWS cloud infrastructure. Below is some help with setting up AWS. Note that it is beneficial to read through AWS documentation on how lambda and dynamoDB works.
+### Local Setup
 
-#### Lambda Function
+* **Golang** installed on the build machine
 
-#### DynamoDB
+---
 
-#### Environment Variable
+## ☁️ AWS Setup
 
-| Key | Description | Default Value |
-| -- | -- | -- |
-| PLAYER_PUUID | The Valorant Player UUID from Riot Games | `""` |
-| VALORANK_API_KEY | The Valorant API key from henrikdev.xyz restful API | `""` |
-| AWS_DYNAMODB_ROLE_ARN | The AWS role ARN consume from STS setup | `""` |
-| AWS_DYNAMODB_TABLE_ARN | The AWS table ARN to connect to cloud database | `""` |
-| AWS_DYNAMODB_SESSION_NAME | The AWS Session name of STS token | `"valorant-dynamodb-session"` |
+### DynamoDB
 
-## Use Case
+Two DynamoDB tables are required: one for rank history and one for clips.
 
-I am using this project to display history of my last 10 rank games on gaming website I've made to mess with who look up my website while gaming.
+#### **Rank Table**
 
-[Valorant BeanBaller Website](www.beanballer.com)
+Stores Valorant rank history for a specific player.
+
+| Attribute      | Type   | Description                                    |
+| -------------- | ------ | ---------------------------------------------- |
+| `puuid_match`  | String | Partition key — player match unique identifier |
+| `raw_date_int` | Number | Sort key — timestamp as integer                |
+
+#### **Clips Table**
+
+Stores Valorant gameplay clips.
+Each clip can be a file URL or an external link from **YouTube** or **Twitch**.
+
+| Attribute | Type   | Description                    |
+| --------- | ------ | ------------------------------ |
+| `uuid`    | String | Partition key — unique clip ID |
+
+---
+
+### Lambda Function
+
+Use the provided build scripts to compile and package the Lambda function:
+
+* **Linux/MacOS:** `build.sh`
+* **Windows:** `build.ps1`
+
+These scripts generate the `function.zip` file for deployment to AWS Lambda.
+
+**Recommended Lambda Configuration**
+
+* **Runtime:** Amazon Linux 2023
+* **Architecture:** x86_64
+
+---
+
+### Environment Variables
+
+The following environment variables are required for the Lambda configuration:
+
+| Key                           | Description                                                                                                        | Required |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------ | -------- |
+| `PLAYER_PUUID`                | Valorant player UUID from Riot Games.                                                                              | ✅        |
+| `VALORANT_API_KEY`            | API key from [henrikdev.xyz](https://docs.henrikdev.xyz/authentication-and-authorization) used to fetch rank data. | ✅        |
+| `AWS_DYNAMODB_RANK_TABLE_ARN` | ARN of the DynamoDB table for rank history.                                                                        | ✅        |
+| `AWS_DYNAMODB_CLIP_TABLE_ARN` | ARN of the DynamoDB table for clips.                                                                               | ✅        |
+| `API_POST_PASSWORD`           | Optional password for API POST request authentication.                                                             | ❌        |
+
+---
+
+### IAM Role Permissions
+
+The Lambda function requires access permissions to the DynamoDB tables as shown below:
+
+```json
+"Statement": [
+  {
+    "Sid": "AllowClipTableAccess",
+    "Effect": "Allow",
+    "Action": [
+      "dynamodb:PutItem",
+      "dynamodb:GetItem",
+      "dynamodb:Scan"
+    ],
+    "Resource": "AWS_DYNAMODB_TABLE_VALORANT_CLIPS_ARN"
+  },
+  {
+    "Sid": "AllowRankTableAccess",
+    "Effect": "Allow",
+    "Action": [
+      "dynamodb:PutItem",
+      "dynamodb:GetItem",
+      "dynamodb:Query"
+    ],
+    "Resource": "AWS_DYNAMODB_TABLE_VALORANT_RANK_ARN"
+  }
+]
+```
+
+---
+
+## 💡 Example Use Case
+
+This project is used to display **BeanBaller’s 10 most recent ranked matches** and related **gameplay clips** on a gaming website.
+
+* 🎮 [Valorant BeanBaller Website](https://www.beanballer.com)
+* 📘 [Valorant BeanBaller Swagger Docs](https://www.beanballer.com/doc.html)
