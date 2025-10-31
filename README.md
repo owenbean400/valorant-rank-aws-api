@@ -2,14 +2,10 @@
 
 This project provides a way to **store and manage Valorant rank data** using **AWS DynamoDB**, with an **API endpoint** for accessing rank history and clip data.
 
----
-
 ## 🚀 Overview
 
 The project runs on **AWS** using a **Golang monolithic server architecture** deployed via **AWS Lambda**.
 It stores and retrieves Valorant player rank history and gameplay clips within DynamoDB.
-
----
 
 ## 🧰 Requirements
 
@@ -23,8 +19,6 @@ It stores and retrieves Valorant player rank history and gameplay clips within D
 ### Local Setup
 
 * **Golang** installed on the build machine
-
----
 
 ## ☁️ AWS Setup
 
@@ -50,8 +44,6 @@ Each clip can be a file URL or an external link from **YouTube** or **Twitch**.
 | --------- | ------ | ------------------------------ |
 | `uuid`    | String | Partition key — unique clip ID |
 
----
-
 ### Lambda Function
 
 Use the provided build scripts to compile and package the Lambda function:
@@ -66,8 +58,6 @@ These scripts generate the `function.zip` file for deployment to AWS Lambda.
 * **Runtime:** Amazon Linux 2023
 * **Architecture:** x86_64
 
----
-
 ### Environment Variables
 
 The following environment variables are required for the Lambda configuration:
@@ -79,8 +69,6 @@ The following environment variables are required for the Lambda configuration:
 | `AWS_DYNAMODB_RANK_TABLE_ARN` | ARN of the DynamoDB table for rank history.                                                                        | ✅        |
 | `AWS_DYNAMODB_CLIP_TABLE_ARN` | ARN of the DynamoDB table for clips.                                                                               | ✅        |
 | `API_POST_PASSWORD`           | Optional password for API POST request authentication.                                                             | ❌        |
-
----
 
 ### IAM Role Permissions
 
@@ -110,8 +98,6 @@ The Lambda function requires access permissions to the DynamoDB tables as shown 
   }
 ]
 ```
-
----
 
 ## 💡 Example Use Case
 
