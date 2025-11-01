@@ -104,4 +104,4 @@ The Lambda function requires access permissions to the DynamoDB tables as shown 
 This project is used to display **BeanBaller’s 10 most recent ranked matches** and related **gameplay clips** on a gaming website.
 
 * 🎮 [Valorant BeanBaller Website](https://www.beanballer.com)
-* 📘 [Valorant BeanBaller Swagger Docs](https://www.beanballer.com/doc.html)
+* 📘 [Valorant BeanBaller Swagger Docs](https://www.beanballer.com/doc/api)
