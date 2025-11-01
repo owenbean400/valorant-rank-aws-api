@@ -1,0 +1,380 @@
+openapi: 3.0.4
+info:
+  title: Valorant BeanBaller Player's API
+  description: |-
+    This is Valorant BeanBaller player's rank API for keeping track of a player's rank history and clips.
+  contact:
+    email: owenbean400@gmail.com
+  version: 1.0.0
+servers:
+  - url: https://api.beanballer.com
+tags:
+  - name: history
+    description: Valorant rank history
+  - name: update
+    description: Valorant sync data with cloud
+  - name: clips
+    description: Valorant clips
+  - name: system
+    description: System status information
+paths:
+  /history:
+    get:
+      tags:
+        - history
+      summary: Get Valorant rank history
+      description: Get Valorant rank history by cursor-based pagination
+      parameters:
+        - name: pageLength
+          in: query
+          description: The maximum amount of records to return in a page
+          required: false
+          schema:
+            type: number
+            default: 10
+        - name: lastEvalKeyPuuidMatch
+          in: query
+          description: The last evaulated key of puuid_match from a set of records.
+          required: false
+          schema:
+            type: string
+        - name: lastEvalKeyRawDateInt
+          in: query
+          description: The last evaulated key of raw_date_int from a set of records.
+          required: false
+          schema:
+            type: number
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RankPage'
+        '403':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestPageLength'
+        '500':
+          description: Internal Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+  /update:
+    post:
+      tags:
+        - update
+      summary: Sync Valorant data
+      description: Sync Valorant rank data from cloud with database
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Success operation
+          content:
+            application/json:
+              schema:
+                $ref:  '#/components/schemas/SuccessfulUpdate'
+        '401':
+          description: Unauthorized operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedKey'
+        '500':
+          description: Internal Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+  /clip/{id}:
+    get:
+      tags:
+        - clips
+      summary: Valorant clip video
+      description: Valorant clip video redirect
+      parameters:
+        - name: id
+          in: path
+          description: The video clip ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '302':
+          description: Video link redirect for download
+        '404':
+          description: Video link not found from ID
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+  /clip:
+    post:
+      tags:
+        - clips
+      summary: Add Valorant clip
+      description: Add Valorant rank clip
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        description: Clips data to upload.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Clip"
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Clip'
+        '401':
+          description: Unauthorized operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnauthorizedKey'
+        '403':
+          description: Bad Data Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestParse'
+        '500':
+          description: Internal Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+  /clips:
+    get:
+      tags:
+        - clips
+      summary: Get Valorant clips
+      description: Get Valorant rank clips
+      parameters:
+        - name: pageLength
+          in: query
+          description: The maximum amount of records to return in a page
+          required: false
+          schema:
+            type: number
+            default: 10
+        - name: lastEvalKey
+          in: query
+          description: The last evaulated key from a set of records.
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Clips'
+        '403':
+          description: Bad request operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BadRequestPageLength'
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InternalError'
+  /version:
+    get:
+      tags:
+        - system
+      summary: Get version
+      description: Get Valorant player API version number
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionNumber'
+components:
+  schemas:
+    LastEvalKeyRank:
+      type: object
+      properties:
+        last_eval_key_puuid_match:
+          type: string
+          example: 19585101-aaed-5b97-8bc5-6cafdc5cb36c
+        last_eval_key_raw_date_int:
+          type: integer
+          format: int32
+          example: 1751829359
+    RankStat:
+      type: object
+      properties:
+        score:
+          type: integer
+          format: int32
+          example: 6838
+        kills:
+          type: integer
+          format: int32
+          example: 27
+        deaths:
+          type: integer
+          format: int32
+          example: 12
+        assists:
+          type: integer
+          format: int32
+          example: 2
+        bodyshots:
+          type: integer
+          format: int32
+          example: 53
+        headshots:
+          type: integer
+          format: int32
+          example: 21
+        legshots:
+          type: integer
+          format: int32
+          example: 6
+        damage_made:
+          type: integer
+          format: int32
+          example: 4355
+        damage_received:
+          type: integer
+          format: int32
+          example: 2568
+    Rank:
+      type: object
+      properties:
+        puuid:
+          type: string
+          example: 19585101-aaed-5b97-8bc5-6cafdc5cb36c
+        match_id:
+          type: string
+          example: 4f41ff6c-e1d3-4ea4-825e-6a3cddc18b6f
+        raw_date_int:
+          type: integer
+          format: int32
+          example: 1751857484
+        date:
+          type: string
+          example: "Monday, July 07, 2025 03:04 AM"
+        mmr_change_to_last_game:
+          type: integer
+          format: int32
+          example: 26
+        map:
+          type: string
+          example: "Haven"
+        character:
+          type: string
+          example: "Chamber"
+        stats:
+          $ref: '#/components/schemas/RankStat'
+        rounds_won:
+          type: integer
+          format: int32
+          example: 13
+        rounds_lost:
+          type: integer
+          format: int32
+          example: 8
+    RankPage:
+      type: object
+      properties:
+        rank_history:
+          type: array
+          items:
+            $ref: '#/components/schemas/Rank'
+        last_eval_keys:
+          $ref: '#/components/schemas/LastEvalKeyRank'
+    Clip:
+      type: object
+      properties:
+        uuid:
+          type: string
+          example: 23b99bfc-b91e-438a-8a73-1b45bc21f96c
+        base_url:
+          type: string
+          example: https://www.beanballer.com/clips
+        file_name:
+          type: string
+          example: 23b99bfc-b91e-438a-8a73-1b45bc21f96c.mp4
+        extenstion:
+          type: string
+          example: mp4
+        file_path:
+          type: string
+          example: /clips/23b99bfc-b91e-438a-8a73-1b45bc21f96c.mp4
+        full_url:
+          type: string
+          example: https://www.beanballer.com/clips/23b99bfc-b91e-438a-8a73-1b45bc21f96c.mp4"
+        match_id:
+          type: string
+          example: 9757bdc7-b266-48bd-af23-0069fa52e733
+    Clips:
+      type: object
+      properties:
+        clips:
+          type: array
+          items:
+            $ref: '#/components/schemas/Clip'
+        last_eval_key_uuid:
+          type: string
+          example: 832e3aa5-6b32-43bd-9151-1e6922fd6e0e
+    InternalError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Error Message
+    BadRequestPageLength:
+      type: object
+      properties:
+        msg:
+          type: string
+          example: page_length must be an integer equal to or less than 10 and greater than 0
+    BadRequestParse:
+      type: object
+      properties:
+        msg:
+          type: string
+          example: Issue with parsing clip data
+    SuccessfulUpdate:
+      type: object
+      properties:
+        msg:
+          type: string
+          example: data updated
+    UnauthorizedKey:
+      type: object
+      properties:
+        msg:
+          type: string
+          example: API Key not authorized
+    VersionNumber:
+      type: object
+      properties:
+        version:
+          type: string
+          example: 0.2.2
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+
